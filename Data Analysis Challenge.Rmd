@@ -1,0 +1,705 @@
+---
+title: "Impact of Financial Healthcare Investment on Global Life Expectancy Over the Past 150 Years"
+author: "540816688 (Olivia Peng) | 530496988 (Angel Poi)"
+subtitle: "Winter Data Analysis Challenge"
+date: "University of Sydney | July 2024"
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    self_contained: yes
+    theme: flatly
+    # Other themes can be found at: https://bootswatch.com/
+    css: 
+      - https://use.fontawesome.com/releases/v5.0.6/css/all.css
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+    # More information: http://rmarkdown.rstudio.com/html_document_format.html
+---
+
+# Research Question
+How does financial investment in healthcare-related areas influence life expectancy within the last 150 years globally?
+
+<br>
+
+# Executive Summary 
+Despite inconsistent statistical conclusions, data reveals higher life expectancy in developed countries due to healthier lifestyle factors, reflected in the government’s ability to prevent and manage health issues such as obesity and COVID. However, global life expectancy benefits from private medical R&D investment such as substantial financial investment into epidemics. Nevertheless, personal efforts to sustain a healthy and informed lifestyle results in the greatest impact on life expectancy. 
+
+
+<br>
+
+
+# Personal Investment (Obesity) & Life Expectancy (1975 - 2016)
+```{r, warning = FALSE, message = FALSE}
+life = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/life-expectancy.csv")
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+
+#rename 
+colnames(life)[1] <- "country"
+colnames(life)[4] <- "lifeexpectancy"
+
+#no. of countries 
+unique_countries <- unique(life$country) 
+
+# Scatterplot → country, year, life-expectancy (given dataset)
+# Grouping countries into continents 
+library(countrycode)
+life$continent = countrycode(sourcevar = life[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+
+excluded_countries <- c("Least developed countries", "Less developed regions", "Less developed regions, excluding China", "Less developed regions, excluding least developed countries", "Land-locked Developing Countries (LLDC)", "More developed regions", "World", "Upper-middle-income countries", "Lower-middle-income countries")
+filtered_data <- life[!(life$country %in% excluded_countries), ]
+
+obesity = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/share-of-adults-defined-as-obese.csv")
+colnames(obesity)[1] <- "country"
+
+life_obesity <- merge(life, obesity, by = c("Year", "country"))
+colnames(life_obesity)[7] <- "obesityrate"
+
+```
+
+
+## Method: Linear Regression Test {.tabset}
+A linear regression test was performed to explore the relationship between obesity rate and life expectancy. 
+
+H: Hypotheses
+
+- Null Hypothesis (H0): There is no relationship between obesity rate and life expectancy. Gradient would be 0.
+- Alternative Hypothesis (H1): There is a relationship between obesity rate and life expectancy. Gradient would not be 0.
+- Significance level: 0.05
+
+A: Assumptions
+
+- Linearity: According to Fig. a, the relationship between obesity rate and life expectancy is not linear through the “Eye Test”.
+- Independence: Though Fig. b shows higher concentration towards the left end, data given was collected by different sources, hence observations are assumed to be independent. 
+- Homoscedasticity: Though Fig. b shows fanning below the x-axis in the more extreme values, Fig. c shows mostly a good fit, suggesting data is homoscedastic.
+- Normality: The residuals of the model are normally distributed as seen in the Fig. c. 
+
+T & P: Test-statistic & P-value
+
+Test showed a large test statistic of 56.92 and an extremely small p-value of p = 2.2 x 10^-16.
+
+C: Conclusion
+
+- Statistical: The null hypothesis was rejected and it is concluded that a significant linear relationship is present. 
+- Scientific: Scientific research strongly refutes the positive linear relationship found between obesity rate and life expectancy. A possible explanation for this misconception is that countries with higher obesity rates may also possess more advanced healthcare systems and larger populations, which can mitigate the adverse effects of obesity on life expectancy.
+
+### Fig. a {-}
+```{r, warning = FALSE, message = FALSE}
+#scatter plot
+library(tidyverse)
+ggplot(data = life_obesity, aes(x = obesityrate, y = lifeexpectancy)) + geom_point()
+```
+
+### Fig. b {-}
+```{r, warning = FALSE, message = FALSE}
+#residual plot
+model = lm(lifeexpectancy~obesityrate, data = life_obesity)
+plot(model, which = 1)
+```
+
+### Fig. c {-}
+```{r, warning = FALSE, message = FALSE}
+#QQ plot 
+model = lm(lifeexpectancy~obesityrate, data = life_obesity)
+plot(model, which = 2) 
+```
+
+### Regression Test {-}
+```{r, warning = FALSE, message = FALSE}
+# T and P
+regression = lm(lifeexpectancy~obesityrate, data = life_obesity)
+summary(regression)
+```
+
+## Graphical Summaries {.tabset}
+### Fig. 1 {-}
+```{r, warning = FALSE, message = FALSE}
+life = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/life-expectancy.csv")
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+
+#rename 
+colnames(life)[1] <- "country"
+colnames(life)[4] <- "lifeexpectancy"
+
+#no. of countries 
+unique_countries <- unique(life$country) 
+
+# Scatterplot → country, year, life-expectancy (given dataset)
+# Grouping countries into continents 
+library(countrycode)
+life$continent = countrycode(sourcevar = life[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+
+excluded_countries <- c("Least developed countries", "Less developed regions", "Less developed regions, excluding China", "Less developed regions, excluding least developed countries", "Land-locked Developing Countries (LLDC)", "More developed regions", "World", "Upper-middle-income countries", "Lower-middle-income countries")
+filtered_data <- life[!(life$country %in% excluded_countries), ]
+
+fig2 <- plot_ly(data = filtered_data, 
+               x = ~Year, y = ~lifeexpectancy, 
+               type = 'scatter', mode = "markers",
+               text = ~paste("Country:", country, "<br>Life Expectancy", round(lifeexpectancy,3)), 
+               color = ~country) %>% 
+  layout(title = list(text = "Average life expectancies across different years and countries", font = list(size = 11)), 
+         xaxis = list(title = "Year"), 
+         yaxis = list(title = "Life Expectancy (years)"), 
+         legend = list(title = list(text = "<b> Country <b>"))) 
+fig2 #Countries life expectancy
+#NA continents -> either delete or recategorise data 
+```
+
+### Fig. 2{-}
+```{r, warning = FALSE, message = FALSE}
+life = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/life-expectancy.csv")
+
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+library(plotly)
+
+#rename 
+colnames(life)[1] <- "country"
+colnames(life)[4] <- "lifeexpectancy"
+
+#no. of countries 
+unique_countries <- unique(life$country) 
+
+# Scatterplot → country, year, life-expectancy (given dataset)
+# Grouping countries into continents 
+library(countrycode)
+life$continent = countrycode(sourcevar = life[, "country"],
+                            origin = "country.name",
+                            destination = "continent")
+
+excluded_countries <- c("Least developed countries", "Less developed regions", "Less developed regions, excluding China", "Less developed regions, excluding least developed countries", "Land-locked Developing Countries (LLDC)", "More developed regions", "World", "Upper-middle-income countries", "Lower-middle-income countries")
+filtered_data <- life[!(life$country %in% excluded_countries), ]
+
+obesity = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/share-of-adults-defined-as-obese.csv")
+colnames(obesity)[1] <- "country"
+
+life_obesity <- merge(life, obesity, by = c("Year", "country"))
+colnames(life_obesity)[7] <- "obesityrate"
+
+fig3 <- plot_ly(data = life_obesity, 
+               x = ~Year, y = ~lifeexpectancy, 
+               type = 'scatter', mode = "markers",
+               text = ~paste("Country:", country, "<br>Life Expectancy:", round(lifeexpectancy,3), "<br>Obesity rate (%):", obesityrate),
+               color = ~country) %>% 
+  layout(title = list(text = "Average life expectancies & obesity rates across different years and countries", font = list(size = 11)),
+         xaxis = list(title = "Year"), 
+         yaxis = list(title = "Life Expectancy (years)"), 
+         legend = list(title = list(text = "<b> Country <b>")))
+fig3 #obesity and life expectancy 
+```
+
+## Data Analysis
+The statistical analysis was inconsistent with scientific research, where it has been suggested a 5.6-10.3 years of lost life due to obesity and lifestyle in the young adult population (Lung et. al., 2018). Obesity is highly associated with “premature mortality at all ages,” although it is challenging to attribute it as a direct cause of death. A systematic review by Reimers and Knapp (2012) further reveals that sufficient exercise allows for an “increase of life expectancy by 0.4 to 6.9 years.” This is partly due to the reduction of risk for fatal cardiovascular diseases, which are leading causes of death in the Western world. 
+
+Fig. 1 illustrates the life expectancy trend over the past 150+ years. Fig. 2 delves deeper into life expectancy's relationship with obesity, explained below. 
+
+Fig. 2 depicts Australia to have one of the highest average life expectancies as of 2016 (82.9 years) despite also having high obesity ratings of over 30%. These trends are similar for the majority of developed countries, including the United States and United Kingdom potentially due to the increased education surrounding lifestyle factors and health as well as greater accessibility to healthcare. Young people in these countries will likely have received more education surrounding health risks of tobacco and alcohol consumption, which are significant lifestyle factors in which overconsumption increases the rate of mortality. This is evident from Fig. 2 where countries such as Romania and Uganda, ranked 1st and 6th in highest alcohol consumption (Pottle, 2024), have significantly lower life expectancies of 75 and 62 years respectively. Additionally, the rate of increase in life expectancy (gradient of the lines), for Romania in particular, is much lower than developed countries, suggesting insufficient awareness regarding healthy lifestyle. This slow rate of increase in life expectancy exists for other lesser developed European, African and South-east Asian countries as well.
+
+
+<br>
+
+
+# Private Medical R&D Investment Funds & Average Life Expectancy (2013 - 2023)
+
+## Method: One-Way ANOVA Test {.tabset}
+A one-way ANOVA test was conducted to assess whether varying amounts of medical R&D funds impact life expectancy per year. A limitation of this test is that R&D investment funds encompass different types, including discovery, preclinical, and clinical development stages. Consequently, these funds may have varying timeframes to take effect.
+
+H: Hypothesis
+
+- Null hypothesis (H0): All group means are equal, meaning global life expectancy remains the same regardless of amount of money allocated for medical research. 
+- Alternate hypothesis (H1): The mean life expectancy would be different for at least one category of funding. 
+- Significance level: 0.05
+
+A: Assumptions
+
+- Independence: The data satisfies our assumption of independence given that the life expectancy data and research fund allocations were collected by different groups; also supported by the random distribution of residuals in Fig. d.
+- Normality: As seen in Fig. e, the residuals are normally distributed as they are a good fit to the line. 
+- Homoscedasticity: Whilst a plot of the residuals shows that the data is slightly heteroscedastic due to the lack of points, the Levene's test has a p-value of p > 0.05, the null hypothesis is retained and it is assumed that homogeneity of variances is satisfied. 
+
+T: Test statistic, P: p-value 
+
+The F value was found to be 5.042, leading to a p-value of 0.0519, slightly above the significance level set as 0.05. 
+
+C: Conclusion
+
+- Statistical: Thus, the null hypothesis was retained 
+- Scientific: A conclusion was made that between the years of 2013 to 2023, the amount of research funding allocated for diseases and medical advancements did not have an impact on the average life expectancy globally. While it is known that advancements in treatments and medical technologies reduce mortality, this conclusion may be explained by the short timeframe of the test, during which these improvements may not have had sufficient time to take effect.
+
+### Fig. d {-}
+```{r, warning = FALSE, message = FALSE}
+RandD = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/r&d investment.csv")
+
+RandD <- RandD %>% 
+  mutate(
+    money = as.numeric(gsub("[^0-9]", "", Awarded.Amount))
+  )
+RandD_new <- RandD %>% select(RFP.Year, money) %>% group_by(RFP.Year)
+
+aggregated <- RandD_new %>%
+  group_by(RFP.Year) %>%
+  summarize(total_money = sum(money, na.rm = TRUE))
+
+aggregated$category <- cut(
+  aggregated$total_money,
+  breaks = c(-Inf, 20000000, 30000000, Inf),
+  labels = c("Low", "Medium", "High")
+)
+
+average_les <- tibble(Year = integer(), Average_LE = numeric())
+
+for (year in 2013:2023){
+  data_of_interest <- filter(life, Year == year)
+  average_le <- mean(data_of_interest$lifeexpectancy, na.rm = TRUE)
+  average_les <- bind_rows(average_les, tibble(Year = year, Average_LE = average_le))
+}
+
+colnames(aggregated)[1] <- "Year"
+
+combined_data <- merge(average_les, aggregated, by = "Year")
+
+library(car)
+anova_model <- aov(Average_LE ~ category, data = combined_data)
+
+#residual plot
+plot(anova_model, which = 1)
+
+```
+
+### Fig. e {-}
+```{r, warning = FALSE, message = FALSE}
+RandD = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/r&d investment.csv")
+
+RandD <- RandD %>% 
+  mutate(
+    money = as.numeric(gsub("[^0-9]", "", Awarded.Amount))
+  )
+RandD_new <- RandD %>% select(RFP.Year, money) %>% group_by(RFP.Year)
+
+aggregated <- RandD_new %>%
+  group_by(RFP.Year) %>%
+  summarize(total_money = sum(money, na.rm = TRUE))
+
+aggregated$category <- cut(
+  aggregated$total_money,
+  breaks = c(-Inf, 20000000, 30000000, Inf),
+  labels = c("Low", "Medium", "High")
+)
+
+average_les <- tibble(Year = integer(), Average_LE = numeric())
+
+for (year in 2013:2023){
+  data_of_interest <- filter(life, Year == year)
+  average_le <- mean(data_of_interest$lifeexpectancy, na.rm = TRUE)
+  average_les <- bind_rows(average_les, tibble(Year = year, Average_LE = average_le))
+}
+
+colnames(aggregated)[1] <- "Year"
+
+combined_data <- merge(average_les, aggregated, by = "Year")
+
+library(car)
+anova_model <- aov(Average_LE ~ category, data = combined_data)
+
+#QQ plot
+plot(anova_model, which = 2)
+
+```
+
+### Fig. f {-}
+```{r, warning = FALSE, message = FALSE}
+RandD = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/r&d investment.csv")
+
+RandD <- RandD %>% 
+  mutate(
+    money = as.numeric(gsub("[^0-9]", "", Awarded.Amount))
+  )
+RandD_new <- RandD %>% select(RFP.Year, money) %>% group_by(RFP.Year)
+
+aggregated <- RandD_new %>%
+  group_by(RFP.Year) %>%
+  summarize(total_money = sum(money, na.rm = TRUE))
+
+aggregated$category <- cut(
+  aggregated$total_money,
+  breaks = c(-Inf, 20000000, 30000000, Inf),
+  labels = c("Low", "Medium", "High")
+)
+
+average_les <- tibble(Year = integer(), Average_LE = numeric())
+
+for (year in 2013:2023){
+  data_of_interest <- filter(life, Year == year)
+  average_le <- mean(data_of_interest$lifeexpectancy, na.rm = TRUE)
+  average_les <- bind_rows(average_les, tibble(Year = year, Average_LE = average_le))
+}
+
+colnames(aggregated)[1] <- "Year"
+
+combined_data <- merge(average_les, aggregated, by = "Year")
+
+library(car)
+anova_model <- aov(Average_LE ~ category, data = combined_data)
+
+#Levene Test
+leveneTest(Average_LE ~ category, data = combined_data)
+```
+
+### ANOVA Test {-}
+```{r, warning = FALSE, message = FALSE}
+RandD = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/r&d investment.csv")
+
+RandD <- RandD %>% 
+  mutate(
+    money = as.numeric(gsub("[^0-9]", "", Awarded.Amount))
+  )
+RandD_new <- RandD %>% select(RFP.Year, money) %>% group_by(RFP.Year)
+
+aggregated <- RandD_new %>%
+  group_by(RFP.Year) %>%
+  summarize(total_money = sum(money, na.rm = TRUE))
+
+aggregated$category <- cut(
+  aggregated$total_money,
+  breaks = c(-Inf, 20000000, 30000000, Inf),
+  labels = c("Low", "Medium", "High")
+)
+
+average_les <- tibble(Year = integer(), Average_LE = numeric())
+
+for (year in 2013:2023){
+  data_of_interest <- filter(life, Year == year)
+  average_le <- mean(data_of_interest$lifeexpectancy, na.rm = TRUE)
+  average_les <- bind_rows(average_les, tibble(Year = year, Average_LE = average_le))
+}
+
+colnames(aggregated)[1] <- "Year"
+
+combined_data <- merge(average_les, aggregated, by = "Year")
+
+library(car)
+anova_model <- aov(Average_LE ~ category, data = combined_data)
+#Model
+summary(anova_model)
+
+```
+
+## Graphical Summaries {.tabset}
+
+### Fig. 3 {-}
+```{r, warning = FALSE, message = FALSE}
+#Import life expectancy and r&d data sets
+life = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/life-expectancy.csv")
+colnames(life)[1] <- "Country"
+colnames(life)[4] <- "life_expect"
+
+rd = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/r&d investment.csv")
+colnames(rd)[9] <- "money"
+colnames(rd)[5] <- "year"
+
+#Scatter plot of average life expectancy 2013-2023
+library(dplyr)
+library(tibble) 
+library(ggplot2)
+library(plotly)
+
+average_life_expectancies <- tibble(Year = integer(), Average_Life_Expectancy = numeric())
+
+for (year in 2013:2023) {
+  data_of_interest <- filter(life, Year == year)
+
+  average_life_expectancy <- mean(data_of_interest$life_expect, na.rm = TRUE)
+  
+  average_life_expectancies <- bind_rows(average_life_expectancies, tibble(Year = year, Average_Life_Expectancy = average_life_expectancy))
+}
+
+plot_ly(average_life_expectancies, x = ~Year, y = ~Average_Life_Expectancy, type = 'scatter', mode = 'markers') %>%
+  layout(title = 'Average Life Expectancy (2013-2023)',
+         xaxis = list(title = 'Year', dtick = 1),
+         yaxis = list(title = 'Average Life Expectancy'))
+```
+
+### Fig. 4 {-}
+```{r, warning = FALSE, message = FALSE}
+#Stacked bar plot of R&D investment into diseases 2013-2023
+library(dplyr)
+library(plotly)
+
+rd <- rd %>%
+  mutate(
+    Year = as.integer(year),
+    money = as.numeric(gsub("[^0-9.]", "", money))
+  )
+
+rd_summarized <- rd %>%
+  group_by(year, Disease) %>%
+  summarise(Total_Money = sum(money, na.rm = TRUE), .groups = 'drop')
+
+fig2 <- plot_ly(rd_summarized, x = ~year, y = ~Total_Money, type = 'bar', name = ~Disease, colors = ~Disease) %>%
+  layout(title = 'Private Medical Investment Allocation Funds (2013-2023)',yaxis = list(title = 'Total R&D Investment Amount (in USD)'), barmode = 'stack', xaxis = list(title = 'Year', dtick = 1))
+
+fig2
+```
+
+## Data Analysis
+Assuming medical research investment takes effect in the long term, Fig. 4 - a stacked bar plot of funding money - is compared to Fig. 3 - a scatter plot of life expectancy - from 2013 to 2023. 
+
+From 2013 up to 2019, average life expectancy has increased from 72.06 to 73.39 alongside a general increase in medical research funding from just below 20 million to around 40 million. Specifically, the 2016 surge in medical R&D investment is likely influenced by the United Nations’ Sustainable Development Goals (SDGs) established in 2015, aiming to combat epidemics including AIDS, TB, malaria, and tropical communicable diseases (World Health Organization, n.d.). The approximate $45 million funding in 2016 appears to coincide with a notable rise in life expectancy in the following years. This reinforces the idea that global initiatives and substantial financial investment can yield significant public health benefits in the long-term.
+
+An interesting observation is that the highest total investment funding in 2020 (over 50 million) corresponds with an unexpectedly lower global average life expectancy of 72.77 years. This could be because of the COVID-19 pandemic which reduced the life expectancy at birth by 1.4 years (Nasrabad & Sasanipour, 2022). The reduction in life expectancy is observed to consistently decrease beyond 2020 as well. Hence, increased investments in other epidemics such as malaria, TB, and NTD might not have been sufficient to counteract the negative impacts of COVID-19 on life expectancy. 
+
+
+<br>
+
+
+# Government Expenditure on Public Healthcare and Education & Life Expectancy (2020)
+
+## Method: Linear Regression Test 
+A linear regression test was attempted to be conducted on the dependence of life expectancy on the combined government investment on healthcare and education across different countries.  
+
+H: Hypothesis
+
+- Null hypothesis (H0): There is no relationship between government expenditure and life expectancy 
+- Alternate hypothesis (H1): There is a linear relationship between the two variables 
+ 
+However, our attempts to combine yearly government investments of both education and healthcare into a singular data set, where any missing data from either set resulted in the exclusion of the country. The merged data set in Table g only has 6 countries, which is an insufficient set of values to perform the regression test; thus, no statistical conclusion could be made.
+
+
+When examining government expenses in 2020, a proportional relationship is evident between the percentage spent on health and education across all countries. Furthermore, as discussed in the private R&D investment section, the COVID-19 pandemic significantly impacted life expectancy, prompting further exploration from a government expenditure perspective. Additionally, a relationship is observed between government expenditure, life expectancy, and obesity rates in countries, which may be confounded with other personal or even genetic factors. 
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(dplyr)
+
+#healthcare 
+healthcare = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/Govt expenditure on health.csv")
+
+healthcare_long <- as.data.frame(t(healthcare))
+
+names(healthcare_long) <- healthcare_long[1,]  
+healthcare_long <- healthcare_long[-1,]  
+
+healthcare_long <- healthcare_long %>%
+  select(-c(0:3))
+healthcare_long <- healthcare_long %>%
+  select(-c(5:6))
+
+colnames(healthcare_long)[1] <- "year"
+
+healthcare_final <- t(healthcare_long)
+healthcare_fl <- as.data.frame(healthcare_final)
+colnames(healthcare_fl) <- healthcare_fl[1, ]
+healthcare_fl <- healthcare_fl[-1, ]
+healthcare_fl <- cbind(Country = rownames(healthcare_fl), healthcare_fl)
+rownames(healthcare_fl) <- NULL
+
+#education
+education = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/Govt expenditure on education.csv")
+
+education_long <- as.data.frame(t(education))
+
+names(education_long) <- education_long[1,]  
+education_long <- education_long[-1,]  
+
+colnames(education_long) <- ifelse(is.na(colnames(education_long)) | colnames(education_long) == "", paste("Unnamed", seq_along(colnames(education_long))), colnames(education_long))
+
+education_total <- education_long %>%
+  filter(`Financing source` == "Total")
+
+education_total <- education_total %>%
+  select(-c(1:6))
+education_total <- education_total %>%
+  select(-c(2:3))
+
+colnames(education_total)[1] <- "year"
+
+education_final <- t(education_total)
+education_fl <- as.data.frame(education_final)
+colnames(education_fl) <- education_fl[1, ]
+education_fl <- education_fl[-1, ]
+education_fl <- cbind(Country = rownames(education_fl), education_fl)
+rownames(education_fl) <- NULL
+education_fl <- select(education_fl, -`2021`)
+
+#obesity 2020 onwards
+obesity_2020 = read.csv("/Users/PengOlivia/Desktop/Data analysis challenge/obesity-2024.csv")
+
+obesity_2020 <- obesity_2020 %>%
+  select(-c(3:7))
+
+colnames(obesity_2020)[1] <- "Country"
+colnames(obesity_2020)[2] <- "obesityrate"
+colnames(obesity_2020)[3] <- "year"
+
+obesity_2020 <- na.omit(obesity_2020)
+
+filter_years <- function(year) {
+  if (grepl("-", year)) {
+    start_year <- as.numeric(strsplit(year, "-")[[1]][1])
+  } else {
+    start_year <- as.numeric(year)
+  }
+  return(start_year >= 2020)
+}
+
+obesity_2020 <- obesity_2020[sapply(obesity_2020$year, filter_years), ]
+
+#2020 datasets
+healthcare_2020 <- healthcare_fl %>%
+  select(Country = `Country`, Health_Expenditure = `2020.000000`)
+
+education_2020 <- education_fl %>%
+  select(Country = `Country`, Education_Expenditure = `2020`)
+
+life_expectancy_2020 <- life %>%
+  filter(Year == 2020) %>%
+  select(Country = `Country`, Life_Expectancy = life_expect)
+
+#bubble plot (2020)
+library(dplyr)
+library(stringr)
+library(plotly)
+
+healthcare_2020 <- healthcare_2020 %>%
+  mutate(Country = str_trim(str_to_upper(Country)))
+education_2020 <- education_2020 %>%
+  mutate(Country = str_trim(str_to_upper(Country)))
+life_expectancy_2020 <- life_expectancy_2020 %>%
+  mutate(Country = str_trim(str_to_upper(Country)))
+
+combined_health_education <- merge(healthcare_2020, education_2020, by = "Country", all = FALSE)
+combined_data <- merge(combined_health_education, life_expectancy_2020, by = "Country", all = FALSE)
+
+combined_data$Health_Expenditure <- as.numeric(combined_data$Health_Expenditure)
+combined_data$Education_Expenditure <- as.numeric(combined_data$Education_Expenditure)
+combined_data$Life_Expectancy <- as.numeric(combined_data$Life_Expectancy)
+combined_data$Life_Expectancy <- as.numeric(combined_data$Life_Expectancy)
+
+names(combined_data) <- str_replace_all(names(combined_data), " ", "_")
+names(obesity_2020) <- str_replace_all(names(obesity_2020), " ", "_")
+
+combined_data$Country <- str_trim(str_to_title(combined_data$Country))
+obesity_2020$Country <- str_trim(str_to_title(obesity_2020$Country))
+
+merged_data <- merge(combined_data, obesity_2020, by = "Country", all.x = TRUE)
+
+merged_data <- merged_data %>% filter(!is.na(obesityrate))
+
+#linear regression between combined govt expenditure and life expectancy
+
+#Test Statistic
+library(dplyr)
+library(stringr)
+library(tidyr)
+
+healthcare_fl <- healthcare_fl %>%
+  select(where(~ any(!is.na(.))))
+education_fl <- education_fl %>%
+  mutate(across(.cols = where(is.numeric), 
+                .fns = ~ as.numeric(str_replace_all(., "[BWO]", ""))))
+education_fl <- education_fl %>%
+  mutate(across(.cols = 2:ncol(education_fl),
+                .fns = ~ as.numeric(str_replace_all(., "[BWO]", ""))))
+
+#merge healthcare and education
+combined_health_education_fl <- merge(healthcare_fl, education_fl, by = "Country", all = FALSE)
+
+#remove decimals from years
+current_names <- colnames(combined_health_education_fl)
+new_names <- gsub("\\.0+$", "", current_names)
+colnames(combined_health_education_fl) <- new_names
+
+#rename duplicate columns and delete NA values
+names(combined_health_education_fl) <- make.unique(names(combined_health_education_fl), sep = "_")
+combined_health_education_fl <- combined_health_education_fl %>% filter(complete.cases(.))
+
+
+combined_health_education_fl <- combined_health_education_fl %>%
+  select(-c(2:4))
+
+#only 6 countries left after deleting NA values over all available years. insufficient size to conduct regression test
+options(repos = c(CRAN = "https://cran.rstudio.com"))
+install.packages("DT")
+library(DT)
+datatable(combined_health_education_fl, options = list(pageLength = 6, autoWidth = TRUE), caption = 'Table g: Combined Health and Education Government Expenditure')
+
+#2020 is healthcare
+#2020_1 is education
+
+```
+Columns with "_1, _2, etc" represent government expenditure on education; those without represent healthcare.
+
+## Graphical Summaries {.tabset}
+### Fig. 5 {-}
+Bubble color represents life expectancy; size remains constant.
+```{r, warning = FALSE, message = FALSE}
+plot <- plot_ly(combined_data, x = ~Health_Expenditure, y = ~Education_Expenditure, 
+                text = ~Country, type = 'scatter', mode = 'markers',
+                marker = list(size = ~Life_Expectancy, 
+                              sizemode = 'diameter', 
+                              sizeref = 1. * max(combined_data$Life_Expectancy) / (50. ^ 1),
+                              color = ~Life_Expectancy, colorscale = 'Viridis', showscale = TRUE)) %>%
+  layout(title = 'Relationship between Government Expenditure of Healthcare & Education on Life Expectancy Globally (2020)',
+         xaxis = list(title = 'Health Expenditure (% of GDP)'),
+         yaxis = list(title = 'Education Expenditure (% of GDP)'))
+
+plot
+
+
+```
+
+### Fig. 6 {-}
+Bubble color represents life expectancy; size represents obesity rate.
+```{r}
+plot_obese <- plot_ly(merged_data, x = ~Health_Expenditure, y = ~Education_Expenditure, 
+                text = ~Country, type = 'scatter', mode = 'markers',
+                marker = list(size = ~obesityrate, 
+                              sizemode = 'diameter', 
+                              sizeref = 1. * max(merged_data$Life_Expectancy) / (50. ^ 1),
+                              color = ~Life_Expectancy, colorscale = 'Viridis', showscale = TRUE)) %>%
+  layout(title = 'Relationship between Government Expenditure of Healthcare & Education with Obesity & Life Expectancy Globally (2020)',
+         xaxis = list(title = 'Health Expenditure (% of GDP)'),
+         yaxis = list(title = 'Education Expenditure (% of GDP)'))
+
+plot_obese
+```
+
+## Data Analysis
+Fig. 5 shows a general positive relationship between health and education expenditure, and an increasingly lighter gradient (greater life expectancy) as both expenditures increase. We observe an even stronger trend in Fig. 6, where the colour of the points becomes lighter as expenditures increase. As expected, the country that had the lowest spending on healthcare also has the lowest life expectancy out of this sample. This is supported by Anwar et.al (2023), where they concluded, using a Durbin-Wu-Hausman test, that a raise of 1% in government health expenditures corresponded to a 0.008% improvement of life expectancy.
+
+This may be because a more educated and healthier population is better informed hence likely to make healthier lifestyle choices, potentially contributing to increasing life expectancy. The effect of substantial education and healthcare expenditure is also evident in the interpretation of obesity data where developed countries can both prevent and overcome health issues like obesity and increase awareness surrounding tobacco and alcohol consumption, pursuing higher life expectancy. 
+
+# Bibliography
+Lung, T., Jan, S., Tan, E. J., Killedar, A., & Hayes, A. (2018). Impact of overweight, obesity and severe obesity on life expectancy of Australian adults. International Journal of Obesity, 43(4), 782–789. https://doi.org/10.1038/s41366-018-0210-2 
+
+Reimers, C. D., Knapp, G., & Reimers, A. K. (2012). Does Physical Activity Increase Life Expectancy? A Review of the Literature. Journal of Aging Research, 2012(243958), 1–9. https://doi.org/10.1155/2012/243958
+
+Pottle, Z. (2024, February 27). Top 15 Countries With The Highest Alcohol Consumption. Alcohol Rehab Guide. https://www.alcoholrehabguide.org/blog/countries-highest-drinking-rates/
+
+SDG Target 3.3 | Communicable diseases: By 2030, end the epidemics of AIDS, tuberculosis, malaria and neglected tropical diseases and combat hepatitis, water-borne diseases and other communicable diseases. (n.d.). World Health Organisation. https://www.who.int/data/gho/data/themes/topics/indicator-groups/indicator-group-details/GHO/sdg-target-3.3-communicable-diseases 
+
+Razeghi Nasrabad, H. B., & Sasanipour, M. (2022). Effect of COVID-19 Epidemic on Life Expectancy and Years of Life Lost in Iran: A Secondary Data Analysis. Iranian Journal of Medical Sciences, 47(3), 210–218. https://doi.org/10.30476/IJMS.2021.90269.2111
+
+Anwar, A., Hyder, S., Norashidah Mohamed Nor, & Younis, M. (2023). Government health expenditures and health outcome nexus: a study on OECD countries. 11. https://doi.org/10.3389/fpubh.2023.1123759
+
+The World Bank. (2023, April 7). Current health expenditure (% of GDP) | Data. Worldbank.org. https://data.worldbank.org/indicator/SH.XPD.CHEX.GD.ZS‌
+OECD. (2024). Expenditure on educational institutions as a percentage of GDP | OECD Data Explorer. Oecd.org. https://data-explorer.oecd.org/vis?fs
+
+Investment Overview | GHIT Fund | Global Health Innovative Technology Fund | Global Health Innovative Technology Fund. (n.d.). ghitfund.org. https://www.ghitfund.org/investment/overview/en
+
+Share of Adults That Are Obese. (2016). Our World in Data. https://ourworldindata.org/grapher/share-of-adults-defined-as-obese
+
